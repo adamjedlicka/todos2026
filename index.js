@@ -32,6 +32,20 @@ app.get('/', async (c) => {
   return c.html(html)
 })
 
+app.get('/todo/:id', async (c, next) => {
+  const id = Number(c.req.param('id'))
+
+  const todo = todos.find((todo) => todo.id === id)
+
+  if (!todo) return await next()
+
+  const html = ejs.renderFile('views/todo-detail.html', {
+    todo,
+  })
+
+  return c.html(html)
+})
+
 app.post('/add-todo', async (c) => {
   const body = await c.req.formData()
   const title = body.get('title')
@@ -59,7 +73,18 @@ app.get('/toggle-todo/:id', async (c) => {
   const todo = todos.find((todo) => todo.id === id)
   todo.done = !todo.done
 
-  return c.redirect('/')
+  return redirectBack(c, '/')
+})
+
+app.post('/update-todo/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const body = await c.req.formData()
+  const title = body.get('title')
+
+  const todo = todos.find((todo) => todo.id === id)
+  todo.title = title
+
+  return redirectBack(c, '/')
 })
 
 app.notFound(async (c) => {
@@ -73,3 +98,8 @@ app.notFound(async (c) => {
 serve(app, (info) => {
   console.log(`Server started on http://localhost:${info.port}`)
 })
+
+const redirectBack = (c, fallbackUrl) => {
+  const referer = c.req.header('Referer')
+  return c.redirect(referer || fallbackUrl)
+}

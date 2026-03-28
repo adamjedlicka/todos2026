@@ -1,21 +1,16 @@
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import ejs from 'ejs'
+import { drizzle } from 'drizzle-orm/libsql'
+import { todosTable } from './src/schema.js'
+import { eq } from 'drizzle-orm'
+
+const db = drizzle({
+  connection: 'file:db.sqlite',
+  logger: true,
+})
 
 const app = new Hono()
-
-let todos = [
-  {
-    id: 1,
-    title: 'Zajít na pivo',
-    done: true,
-  },
-  {
-    id: 2,
-    title: 'Jít učit Node.js',
-    done: false,
-  },
-]
 
 app.get(async (c, next) => {
   console.log(c.req.method, c.req.url)
@@ -24,6 +19,8 @@ app.get(async (c, next) => {
 })
 
 app.get('/', async (c) => {
+  const todos = await db.select().from(todosTable).all()
+
   const html = await ejs.renderFile('views/index.html', {
     name: 'Todos',
     todos,
@@ -35,7 +32,7 @@ app.get('/', async (c) => {
 app.get('/todo/:id', async (c, next) => {
   const id = Number(c.req.param('id'))
 
-  const todo = todos.find((todo) => todo.id === id)
+  const todo = await db.select().from(todosTable).where(eq(todosTable.id, id)).get()
 
   if (!todo) return await next()
 
@@ -50,8 +47,7 @@ app.post('/add-todo', async (c) => {
   const body = await c.req.formData()
   const title = body.get('title')
 
-  todos.push({
-    id: todos.length + 1,
+  await db.insert(todosTable).values({
     title,
     done: false,
   })
@@ -62,7 +58,7 @@ app.post('/add-todo', async (c) => {
 app.get('/remove-todo/:id', async (c) => {
   const id = Number(c.req.param('id'))
 
-  todos = todos.filter((todo) => todo.id !== id)
+  await db.delete(todosTable).where(eq(todosTable.id, id))
 
   return c.redirect('/')
 })
@@ -70,8 +66,9 @@ app.get('/remove-todo/:id', async (c) => {
 app.get('/toggle-todo/:id', async (c) => {
   const id = Number(c.req.param('id'))
 
-  const todo = todos.find((todo) => todo.id === id)
-  todo.done = !todo.done
+  const todo = await db.select().from(todosTable).where(eq(todosTable.id, id)).get()
+
+  await db.update(todosTable).set({ done: !todo.done }).where(eq(todosTable.id, id))
 
   return redirectBack(c, '/')
 })
@@ -81,8 +78,7 @@ app.post('/update-todo/:id', async (c) => {
   const body = await c.req.formData()
   const title = body.get('title')
 
-  const todo = todos.find((todo) => todo.id === id)
-  todo.title = title
+  await db.update(todosTable).set({ title }).where(eq(todosTable.id, id))
 
   return redirectBack(c, '/')
 })

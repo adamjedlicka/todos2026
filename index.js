@@ -24,6 +24,7 @@ app.get('/', async (c) => {
   const html = await ejs.renderFile('views/index.html', {
     name: 'Todos',
     todos,
+    utils,
   })
 
   return c.html(html)
@@ -38,6 +39,7 @@ app.get('/todo/:id', async (c, next) => {
 
   const html = ejs.renderFile('views/todo-detail.html', {
     todo,
+    utils,
   })
 
   return c.html(html)
@@ -46,9 +48,11 @@ app.get('/todo/:id', async (c, next) => {
 app.post('/add-todo', async (c) => {
   const body = await c.req.formData()
   const title = body.get('title')
+  const priority = body.get('priority')
 
   await db.insert(todosTable).values({
     title,
+    priority,
     done: false,
   })
 
@@ -77,8 +81,9 @@ app.post('/update-todo/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.formData()
   const title = body.get('title')
+  const priority = body.get('priority')
 
-  await db.update(todosTable).set({ title }).where(eq(todosTable.id, id))
+  await db.update(todosTable).set({ title, priority }).where(eq(todosTable.id, id))
 
   return redirectBack(c, '/')
 })
@@ -98,4 +103,18 @@ serve(app, (info) => {
 const redirectBack = (c, fallbackUrl) => {
   const referer = c.req.header('Referer')
   return c.redirect(referer || fallbackUrl)
+}
+
+const utils = {
+  formatPriority: (priority) => {
+    if (priority === 'low') {
+      return 'Nízká'
+    } else if (priority === 'medium') {
+      return 'Střední'
+    } else if (priority === 'high') {
+      return 'Vysoká'
+    } else {
+      return priority
+    }
+  },
 }

@@ -20,6 +20,10 @@
         <td><%= todo.id %></td>
       </tr>
       <tr>
+        <th>Název</th>
+        <td><%= todo.title %></td>
+      </tr>
+      <tr>
         <th>Stav</th>
         <td>
           <% if (todo.done) { %>
@@ -28,6 +32,10 @@
           <em>&#8230; Čeká na splnění</em>
           <% } %>
         </td>
+      </tr>
+      <tr>
+        <th>Priorita</th>
+        <td><%= utils.formatPriority(todo.priority) %></td>
       </tr>
     </table>
 
@@ -48,7 +56,15 @@
       <form method="post" action="/update-todo/<%= todo.id %>">
         <label for="title">Nový název:</label>
         <br />
-        <input id="title" name="title" size="40" placeholder="<%= todo.title %>" />
+        <input id="title" name="title" size="40" value="<%= todo.title %>" />
+        <br />
+        <label>Priorita:</label>
+        <br />
+        <select name="priority">
+          <option value="low" <%= todo.priority === 'low' ? 'selected' : '' %>>Nízká</option>
+          <option value="medium" <%= todo.priority === 'medium' ? 'selected' : '' %>>Střední</option>
+          <option value="high" <%= todo.priority === 'high' ? 'selected' : '' %>>Vysoká</option>
+        </select>
         <button type="submit">&#10003; Uložit</button>
       </form>
     </fieldset>

@@ -18,6 +18,7 @@
         <tr>
           <th>#</th>
           <th>Úkol</th>
+          <th>Priorita</th>
           <th>Stav</th>
           <th>Akce</th>
         </tr>
@@ -33,6 +34,7 @@
               <% } else { %> <%= todo.title %> <% } %>
             </a>
           </td>
+          <td><%= utils.formatPriority(todo.priority) %></td>
           <td align="center">
             <% if (todo.done) { %>
             <strong>&#10003; Hotovo</strong>
@@ -59,9 +61,17 @@
     <fieldset>
       <legend><strong>Přidat nový úkol</strong></legend>
       <form method="post" action="/add-todo">
-        <label for="title">Název úkolu:</label>
+        <label>Název úkolu:</label>
         <br />
-        <input id="title" name="title" size="40" placeholder="Co je potřeba udělat?" />
+        <input name="title" size="40" placeholder="Co je potřeba udělat?" />
+        <br />
+        <label>Priorita:</label>
+        <br />
+        <select name="priority">
+          <option value="low">Nízká</option>
+          <option value="medium">Střední</option>
+          <option value="high">Vysoká</option>
+        </select>
         <button type="submit">&#43; Přidat</button>
       </form>
     </fieldset>

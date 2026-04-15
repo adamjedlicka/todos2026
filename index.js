@@ -32,13 +32,8 @@ app.get(
   upgradeWebSocket((c) => ({
     onOpen: (evt, ws) => {
       webSockets.add(ws)
-      console.log('open web sockets:', webSockets.size)
-    },
-    onMessage: () => {
-      console.log('message')
     },
     onClose: (evt, ws) => {
-      console.log('close')
       webSockets.delete(ws)
     },
   })),
@@ -93,6 +88,7 @@ app.get('/remove-todo/:id', async (c) => {
   await db.delete(todosTable).where(eq(todosTable.id, id))
 
   sendTodosToAllWebsockets()
+  sendTodoRemovedToAllWebsockets(id)
 
   return c.redirect('/')
 })
@@ -105,6 +101,7 @@ app.get('/toggle-todo/:id', async (c) => {
   await db.update(todosTable).set({ done: !todo.done }).where(eq(todosTable.id, id))
 
   sendTodosToAllWebsockets()
+  sendTodoDetailToAllWebsockets(id)
 
   return redirectBack(c, '/')
 })
@@ -123,6 +120,44 @@ const sendTodosToAllWebsockets = async () => {
         JSON.stringify({
           type: 'todos',
           html,
+        }),
+      )
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const sendTodoDetailToAllWebsockets = async (id) => {
+  try {
+    const todo = await db.select().from(todosTable).where(eq(todosTable.id, id)).get()
+
+    const html = await ejs.renderFile('views/_todo.html', {
+      todo,
+      utils,
+    })
+
+    for (const webSocket of webSockets) {
+      webSocket.send(
+        JSON.stringify({
+          type: 'todo-detail',
+          id,
+          html,
+        }),
+      )
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const sendTodoRemovedToAllWebsockets = async (id) => {
+  try {
+    for (const webSocket of webSockets) {
+      webSocket.send(
+        JSON.stringify({
+          type: 'todo-removed',
+          id,
         }),
       )
     }
